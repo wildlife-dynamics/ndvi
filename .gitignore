@@ -167,3 +167,6 @@ cython_debug/
 .claude
 .scratch
 .env
+
+environment.tar
+metadata.json

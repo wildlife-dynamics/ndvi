@@ -37,7 +37,7 @@ Before using this workflow, you need:
 
 1. Select "Workflow Templates" tab
 2. Click "+ Add Template"
-3. Copy and paste this URL https://github.com/wildlife-dynamics/wt-ndvi and wait for the workflow template to be downloaded and initialized
+3. Copy and paste this URL https://github.com/wildlife-dynamics/ndvi and wait for the workflow template to be downloaded and initialized
 4. The template will now appear in your available template list
 
 ## Configuration Guide

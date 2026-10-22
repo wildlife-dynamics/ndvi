@@ -2,68 +2,90 @@
 
 
 import json
-from pathlib import Path
-from typing import Any, get_args
+from importlib.resources import files
+from typing import Any
 
-from .formdata import FormData
-from .params import Params
+from wt_contracts import (
+    formdata_to_params as _formdata_to_params,
+)
+from wt_contracts import (
+    params_to_formdata as _params_to_formdata,
+)
 
 
-def get_rjsf() -> dict[str, Any]:
-    with Path(__file__).parent.joinpath("rjsf.json").open() as f:
-        return json.load(f)
+def load_rjsf_schema() -> dict[str, Any]:
+    """Load the RJSF (grouped) JSON schema bundled with this package."""
+    with files(__package__).joinpath("rjsf.json").open() as f:
+        result: dict[str, Any] = json.load(f)
+        return result
+
+
+def load_params_schema() -> dict[str, Any]:
+    """Load the flat params JSON schema bundled with this package."""
+    with files(__package__).joinpath("params.json").open() as f:
+        result: dict[str, Any] = json.load(f)
+        return result
+
+
+def _connection_keys(node: Any, defs: dict[str, Any]) -> set[str]:
+    """Return the connection keys reachable from a schema node.
+
+    Walks `node` looking for `$ref`s to definitions whose name ends in
+    "Connection", following refs to other definitions in `defs` so that
+    connections nested inside referenced models are found too.
+
+    Args:
+        node: Schema fragment to walk (dict, list, or scalar)
+        defs: The schema's `$defs` block, used to resolve `$ref`s
+
+    Returns:
+        Connection keys, each a referenced def name minus its "Connection" suffix
+    """
+    found: set[str] = set()
+    seen: set[str] = (
+        set()
+    )  # defs already walked; guards against self-referential schemas
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            ref = node.get("$ref")
+            if isinstance(ref, str) and ref.startswith("#/$defs/"):
+                name = ref.removeprefix("#/$defs/")
+                # Treats a def named "Connection" as ordinary
+                if name.endswith("Connection") and name != "Connection":
+                    found.add(name.removesuffix("Connection"))
+                elif name not in seen:
+                    seen.add(name)
+                    walk(defs.get(name, {}))
+            for key, value in node.items():
+                if key != "$ref":
+                    walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(node)
+    return found
 
 
 def get_data_connection_property_names() -> dict[str, list[str]]:
-    with Path(__file__).parent.joinpath("params.json").open() as f:
-        params = json.load(f)
-        data_connections = {}
-        for k, v in params["properties"].items():
-            if isinstance(v, dict) and v.get("properties"):
-                for inner_k, inner_v in v["properties"].items():
-                    if isinstance(inner_v, dict) and inner_v.get("$ref"):
-                        ref = inner_v.get("$ref")
-                        if ref.endswith("Connection"):
-                            key = (
-                                inner_v.get("$ref")
-                                .lstrip("#/$defs/")
-                                .rstrip("Connection")
-                            )
-                            if data_connections.get(key):
-                                data_connections[key].append(k)
-                            else:
-                                data_connections[key] = [k]
+    """Map each data connection type to the params properties that require it."""
+    params = load_params_schema()
+    defs = params.get("$defs", {})
+    data_connections: dict[str, list[str]] = {}
+    for k, v in params["properties"].items():
+        if isinstance(v, dict) and v.get("properties"):
+            for key in sorted(_connection_keys(v["properties"], defs)):
+                if data_connections.get(key):
+                    data_connections[key].append(k)
+                else:
+                    data_connections[key] = [k]
     return data_connections
 
 
-def formdata_to_params(formdata: FormData):
-    formdata_asdict: dict[str, dict | Any] = formdata.model_dump()
-    params_fieldnames = Params.model_fields.keys()
-    params_kws = {}
-    for k, v in formdata_asdict.items():
-        if k in params_fieldnames:
-            params_kws[k] = v
-        else:
-            for inner_k, inner_v in v.items():
-                params_kws[inner_k] = inner_v
-    return Params(**params_kws)
+def formdata_to_params(formdata: dict[str, Any]) -> dict[str, Any]:
+    return _formdata_to_params(formdata, load_rjsf_schema(), load_params_schema())
 
 
-def params_to_formdata(params: dict):
-    formdata: dict[str, dict] = {}
-    aliased_annotations = {
-        v.alias: v.annotation for v in FormData.model_fields.values() if v.alias
-    }
-    task_groups = {
-        k: list(get_args(v)[0].model_fields) for k, v in aliased_annotations.items()
-    }
-    for k, v in params.items():
-        if k in FormData.model_fields:
-            formdata[k] = v
-        else:
-            group = next(g for g in task_groups if k in task_groups[g])
-            if group in formdata:
-                formdata[group].update({k: v})
-            else:
-                formdata[group] = {k: v}
-    return formdata
+def params_to_formdata(params: dict[str, Any]) -> dict[str, Any]:
+    return _params_to_formdata(params, load_rjsf_schema(), load_params_schema())
