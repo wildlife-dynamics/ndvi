@@ -107,6 +107,15 @@ Choose which MODIS satellite data product to use for NDVI calculation.
     - **MODIS MYD13A1 16-Day Composite**: Uses pre-calculated NDVI from 16-day composites. Provides quality-filtered "best pixel" values at 500m resolution with ~0.025 accuracy. Better for phenology studies but may saturate in dense canopies.
     - **MODIS MCD43A4 Daily NBAR**: Uses daily nadir BRDF-adjusted reflectance. Computes NDVI from NIR/Red bands with view-angle correction for consistent measurements. Higher temporal resolution but more susceptible to cloud gaps.
 
+#### Mask Water Bodies
+Exclude lakes and other water bodies so they don't pull NDVI values toward zero.
+
+- **Mask Water Bodies** (optional): Turn on to keep only land pixels in the NDVI trend and map
+  - Default: off
+  - **MODIS MYD13A1 16-Day Composite**: uses the land/water flag that MODIS stores with each image. Lake shorelines and seasonal water are masked too, so in flood-prone areas slightly different pixels may be used on different dates.
+  - **MODIS MCD43A4 Daily NBAR**: uses the MODIS MOD44W land/water map (most recent year, 2015). Suits permanent water such as large lakes.
+  - Note: with this on, masked pixels appear as `0` in the optional NDVI GeoTIFF export.
+  
 #### 7. NDVI Trend
 Configure how historical NDVI data is grouped for comparison.
 
