@@ -12,8 +12,8 @@ published = true
 # required for compilation
 wt-compiler = "==0.10.1"
 graphviz = "*"
-# pinned: ruff's conda package does not work under Python 3.15 yet (`python -m ruff` fails), which breaks wt-compiler
-python = "<3.15"
+# pinned: ruff 0.17.x conda package breaks `python -m ruff`, which wt-compiler uses to format generated code
+ruff = "<0.17"
 
 # required for testing
 go-yq = "*"
