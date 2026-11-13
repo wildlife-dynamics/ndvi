@@ -12,6 +12,9 @@ published = true
 # required for compilation
 wt-compiler = "==0.10.1"
 graphviz = "*"
+# pinned: ruff 0.17.x conda package breaks `python -m ruff`, which wt-compiler uses to format generated code
+ruff = "<0.17"
+python = "3.14.*"
 
 # required for testing
 go-yq = "*"
