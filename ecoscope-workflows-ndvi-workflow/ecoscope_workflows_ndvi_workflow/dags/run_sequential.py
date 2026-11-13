@@ -2,6 +2,8 @@
 import os
 from typing import Any
 
+from ecoscope.platform.tasks.analysis import create_ndvi_tile as create_ndvi_tile
+from ecoscope.platform.tasks.config import set_bool_var as set_bool_var
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
 from ecoscope.platform.tasks.config import set_workflow_details as set_workflow_details
 from ecoscope.platform.tasks.filter import set_time_range as set_time_range
@@ -46,7 +48,6 @@ from ecoscope.platform.tasks.skip import (
 )
 from ecoscope.platform.tasks.skip import never as never
 from ecoscope.platform.tasks.transformation import convert_crs as convert_crs
-from ecoscope_workflows_ext_custom.tasks.io import create_ndvi_tile as create_ndvi_tile
 from wt_contracts import validate as _validate
 from wt_task import task
 
@@ -193,6 +194,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    mask_water = (
+        task(set_bool_var)
+        .validate()
+        .set_task_instance_id("mask_water")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("mask_water") or {}))
+        .call()
+    )
+
     calculate_ndvi = (
         task(calculate_ndvi_range)
         .validate()
@@ -210,6 +228,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             client=gee_client,
             time_range=time_range,
             ndvi_method=ndvi_method,
+            mask_water=mask_water,
             baseline_time_range=None,
             image_size=1000000000,
             **(params.get("calculate_ndvi") or {}),
@@ -345,6 +364,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             client=gee_client,
             time_range=time_range,
             ndvi_method=ndvi_method,
+            mask_water=mask_water,
             reducer="mean",
             palette=None,
             scale=500,
