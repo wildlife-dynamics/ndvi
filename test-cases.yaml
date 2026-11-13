@@ -21,6 +21,8 @@ base:
       spatial_features_group_name: "SpatialGrouperTest"
     ndvi_method:
       var: "MODIS MYD13A1 16-Day Composite"
+    mask_water:
+      var: false
     calculate_ndvi:
       grouping_unit: month
     base_maps:
@@ -48,6 +50,8 @@ precomputed:
         - index_name: "name"
     ndvi_method:
       var: "MODIS MYD13A1 16-Day Composite"
+    mask_water:
+      var: false
     calculate_ndvi:
       grouping_unit: month
     base_maps:
@@ -83,8 +87,42 @@ calculated:
         - index_name: "name"
     ndvi_method:
       var: "MODIS MCD43A4 Daily NBAR"
+    mask_water:
+      var: false
     calculate_ndvi:
       grouping_unit: day_of_year
+    base_maps:
+      base_maps:
+        - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+    roi:
+      spatial_features_group_name: "SpatialGrouperTest"
+
+
+water_mask:
+  name: Water Mask NDVI Test Case
+  mock_io: false
+  params:
+    workflow_details:
+      name: "NDVI Workflow"
+      description: "NDVI with lakes and other water bodies masked out"
+    gee_client:
+      data_source:
+        name: "ecoscope_poc"
+    er_client_name:
+      data_source:
+        name: "mep_dev"
+    time_range:
+      since: "2023-01-01T00:00:00Z"
+      until: "2023-03-31T23:59:59Z"
+    groupers:
+      groupers:
+        - index_name: "name"
+    ndvi_method:
+      var: "MODIS MYD13A1 16-Day Composite"
+    mask_water:
+      var: true
+    calculate_ndvi:
+      grouping_unit: month
     base_maps:
       base_maps:
         - url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
