@@ -45,7 +45,7 @@ RESULTS_ENV_VAR = "ECOSCOPE_WORKFLOWS_RESULTS"
 IO_TASKS_IMPORTABLE_REFERENCES = [
     "ecoscope.platform.tasks.io.get_spatial_features_group",
     "ecoscope.platform.tasks.io.calculate_ndvi_range",
-    "ecoscope_workflows_ext_custom.tasks.io.create_ndvi_tile",
+    "ecoscope.platform.tasks.analysis.create_ndvi_tile",
 ]
 
 yaml = ruamel.yaml.YAML(typ="safe")

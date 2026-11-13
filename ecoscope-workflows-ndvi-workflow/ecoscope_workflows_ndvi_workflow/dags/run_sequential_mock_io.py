@@ -29,6 +29,7 @@ get_spatial_features_group = create_func_magicmock(  # 🧪
     anchor="ecoscope.platform.tasks.io",  # 🧪
     func_name="get_spatial_features_group",  # 🧪
 )  # 🧪
+from ecoscope.platform.tasks.config import set_bool_var as set_bool_var
 from ecoscope.platform.tasks.config import set_string_var as set_string_var
 from ecoscope.platform.tasks.groupby import split_groups as split_groups
 
@@ -48,7 +49,7 @@ from ecoscope.platform.tasks.results import merge_widget_views as merge_widget_v
 from ecoscope.platform.tasks.skip import never as never
 
 create_ndvi_tile = create_func_magicmock(  # 🧪
-    anchor="ecoscope_workflows_ext_custom.tasks.io",  # 🧪
+    anchor="ecoscope.platform.tasks.analysis",  # 🧪
     func_name="create_ndvi_tile",  # 🧪
 )  # 🧪
 from ecoscope.platform.tasks.groupby import groupbykey as groupbykey
@@ -214,6 +215,23 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
         .call()
     )
 
+    mask_water = (
+        task(set_bool_var)
+        .validate()
+        .set_task_instance_id("mask_water")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(**(params.get("mask_water") or {}))
+        .call()
+    )
+
     calculate_ndvi = (
         task(calculate_ndvi_range)
         # 🧪 validation omitted for mocked IO task (returns pre-loaded example data)
@@ -231,6 +249,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             client=gee_client,
             time_range=time_range,
             ndvi_method=ndvi_method,
+            mask_water=mask_water,
             baseline_time_range=None,
             image_size=1000000000,
             **(params.get("calculate_ndvi") or {}),
@@ -366,6 +385,7 @@ def main(params: dict[str, Any], validate_params_schema: bool = True):
             client=gee_client,
             time_range=time_range,
             ndvi_method=ndvi_method,
+            mask_water=mask_water,
             reducer="mean",
             palette=None,
             scale=500,
